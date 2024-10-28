@@ -45,6 +45,7 @@ total_vehicle_query = """
     ALTER TABLE traffic 
     ADD COLUMN total_vehicle integer
     """
+update_vehicle_count_query = " UPDATE traffic SET total_vehicle = vehicles_ezpass + vehicles_vtoll"
 
 
 def create_tables():
@@ -73,15 +74,43 @@ def alter_table():
     with connection:
         curr = connection.cursor()
         curr.execute(total_vehicle_query)
+        curr.execute(update_vehicle_count_query)
         connection.commit()
         curr.close()
 
 def fetch_and_process():
-    results = client.get("qzve-kjga", where="plaza_id = 30", limit=100000)
+    results = client.get("qzve-kjga", where="plaza_id = 30", limit=1000000)
     results_df = pd.DataFrame.from_records(results)
     
     return results_df
 
+
+def select_Data(start_date, end_date):
+    with connection:
+        curr = connection.cursor()
+        curr.execute("SELECT * FROM traffic WHERE date BETWEEN %s AND %s", (start_date, end_date))
+        data = curr.fetchall()
+        print(data)
+
+
 def close():
     with connection:
         connection.close()
+
+
+
+def main():
+    create_tables()
+
+    data = fetch_and_process()
+
+    insert(data)
+
+    update_table()
+
+    alter_table()
+
+    close()
+
+if __name__ =="__database__":
+    main()
